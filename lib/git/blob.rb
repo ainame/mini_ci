@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+require 'date'
 
 class Git
   class Blob
@@ -23,6 +24,8 @@ class Git
         previous_value = self.send(key)
         appended_value = [previous_value, value].join
         self.send(setter, appended_value)
+      elsif key == :date
+        self.date = DateTime.parse(value)
       else
         setter = (key.to_s + '=').to_s
         self.send(setter, value)

@@ -1,10 +1,17 @@
+# -*- coding: utf-8 -*-
+$:.unshift Dir.dirname(__FILE__) + '/lib'
+require 'git'
 require 'chatroid'
+require 'date'
 
 Chatroid.new do
-  last_modified
+  g = Git.new
+  last_modified = DateTime.now
+
   on_time :sec => 0 do
-    
-    count += 1
+    g.parse_log(g.log)
+    # last_modifiedと比較する処理
+    # テストを走らせる処理
   end
 end.run!
 
