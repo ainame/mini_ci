@@ -26,7 +26,7 @@ class Git
 
   def initialize(path = nil)
     @blobs = []
-    @base_dir = parse_base_dir(path || `pwd`.strip)
+    @base_dir = path #parse_base_dir(path || `pwd`.strip)
 
     raise NotGitBinaryError unless BIN =~ /git/
     raise NotAGitRepositoryError unless git_repository?      
@@ -60,7 +60,7 @@ class Git
     return nil unless block_given?
 
     Dir.chdir(path) do
-      yield
+      yield self
     end
   end
 
