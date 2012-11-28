@@ -36,7 +36,7 @@ Chatroid.new do
     return [exit_status, error_locations]
   end
 
-  on_time :sec => [0,5,10,15,20,25,30,35,40,45,50,55] do
+  on_time :min => [0,5,10,15,20,25,30,35,40,45,50,55], :sec => 0 do
     g = Git.new(@settings['base_dir'])
     begin
       g.evaluate_with_base_dir do |git|
