@@ -4,6 +4,7 @@ require 'git'
 require 'chatroid'
 require 'date'
 require 'yaml'
+require 'tempfile'
 require 'active_support'
 require 'active_support/all'
 
@@ -11,11 +12,19 @@ config = YAML.load(open('./setting.yaml').read)
 
 def build(base_dir, target_dir)
   exit_status = false
+  error_locations = ''
   Dir.chdir(base_dir) do
-    exit_status = system "#{config['test_command']} #{target_dir}"
+    test_result_source = `#{config['test_command']} #{target_dir}`
+    exit_status        = $?.success?
+
+    Tempfile.open('./tmp_test_result_source.txt') do |f|
+      f.puts test_result_source
+      f.flush
+      serror_location = `perl ./test_error_location.pl < #{f.path}`
+    end
   end
 
-  exit_status
+  return [exit_status, error_locations]
 end
 
 Chatroid.new do
@@ -40,8 +49,30 @@ Chatroid.new do
 
     # last_modifiedと比較する処理
     if g.blobs.first.respond_to?(:date) && g.blobs.first.date > @last_modified
-      unless build(config['base_dir'], config['target_dir'])
+      result, error_locations = build(config['base_dir'], config['target_dir'])
+      unless result
         privmsg config['channel'], ":" + "@all Failure!!!"
+
+        error_locations.each_line do |line|
+          notice config['channel'], ":" + line
+        end
+
+        notice config['channel'], ":" + "--this cause these commits--"
+        commits = []
+        g.blobs.each do |blob|
+          next unless blob.date <= @last_modified
+          notice config['channel'], ":" + "#{blob.author}: #{blob.message}"
+          commits.push blob.commit
+        end
+
+        if config[:git_web_base_url]
+          commitdiff_url = "#{config[:git_web_base_url]}a=commitdiff&h=#{commits.first}&"
+          commitdiff_url .= "hp=#{commits.last}" if commits.size > 1
+          notice config['channel'], ":  " + commitdiff_url
+        else
+          notice config['channel'], ":  " + "#{commits.last}..#{commits.first}"
+        end
+        
       else
         #notice CHANNEL, ":" + 'Success...'
       end
